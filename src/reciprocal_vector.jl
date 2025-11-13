@@ -42,12 +42,12 @@ function reciprocal_vector(rα, rβ, rγ, rλ)
     rβα = rα - rβ
     rβγ = rγ - rβ
     rβλ = rλ - rβ
-    reciprocal_vector(rβα, rβγ, rβλ)
+    return reciprocal_vector(rβα, rβγ, rβλ)
 end
 
 
 """
-    reciprocal_vector(rα, r0s::AbstractVector{<:AbstractVector})
+    reciprocal_vector(rα, r0s)
 
 Generalised reciprocal vector for N != 4
 
@@ -56,8 +56,9 @@ Generalised reciprocal vector for N != 4
 ```
 See also: [`reciprocal_vector`](@ref), [`position_tensor`](@ref)
 """
-function reciprocal_vector(rα, r0s::AbstractVector{<:AbstractVector})
-    r_all = [rα, r0s...]
-    𝐑 = position_tensor(r_all)
-    inv(𝐑) * (rα - mean(r_all))
+function reciprocal_vector(rα, r0s)
+    r_all = (rα, r0s...)
+    r̄ = mean(r_all)
+    𝐑 = position_tensor(r_all, r̄)
+    return inv(𝐑) * (rα - r̄)
 end

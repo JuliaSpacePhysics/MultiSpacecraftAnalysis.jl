@@ -5,6 +5,7 @@ using StructArrays
 using MappedArrays: mappedarray
 using ArraysOfArrays: flatview
 using StaticArrays
+using Statistics: mean
 
 export lingradest
 export ConstantVelocityApproach, CVA

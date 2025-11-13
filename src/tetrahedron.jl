@@ -8,10 +8,9 @@ with ``𝐫_b = ∑_α 𝐫_α / N`` and `N` is the number of positions.
 # References
 - [paschmannMultispacecraftAnalysisMethods2008](@citet) Paschmann & Daly, 2008. Section 4.7
 """
-function position_tensor(rs::AbstractVector{<:AbstractVector})
-    rs = rs .- Ref(mean(rs))
-    Rall = reduce(hcat, rs)'
-    Rall' * Rall
+function position_tensor(rs, r̄ = mean(rs))
+    Rall = stack(r -> r .- r̄, rs)
+    return Rall * Rall'
 end
 
 """
@@ -21,14 +20,13 @@ end
 
 See also: [`position_tensor`](@ref)
 """
-
 volumetric_tensor(rs::AbstractVector{<:AbstractVector}) = position_tensor(rs) / length(rs)
 
 """Calculate tetrahedron quality factors"""
 function tetrahedron_quality(rs::AbstractVector{<:AbstractVector})
     Rvol = volumetric_tensor(rs)
     # Calculate eigenvaluesz and eigenvectors
-    F = eigen(ustrip(Rvol), sortby=x -> -abs(x)) # Note: we want descending order
+    F = eigen(Rvol, sortby = x -> -abs(x)) # Note: we want descending order
     semiaxes = sqrt.(F.values)  # sqrt of eigenvalues
     eigenvectors = F.vectors
     # Calculate quality parameters
@@ -36,5 +34,5 @@ function tetrahedron_quality(rs::AbstractVector{<:AbstractVector})
     Elongation = 1 - (semiaxes[2] / semiaxes[1])
     Planarity = 1 - (semiaxes[3] / semiaxes[2])
 
-    return (; det=det(Rvol), semiaxes, Qsr, Elongation, Planarity, eigenvectors)
+    return (; det = det(Rvol), semiaxes, Qsr, Elongation, Planarity, eigenvectors)
 end
