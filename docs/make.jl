@@ -12,7 +12,6 @@ makedocs(;
     sitename = "MultiSpacecraftAnalysis.jl",
     format = Documenter.HTML(;
         canonical = "https://JuliaSpacePhysics.github.io/MultiSpacecraftAnalysis.jl",
-        edit_link = "main",
         assets = String[],
     ),
     pages = [
@@ -24,5 +23,5 @@ makedocs(;
 
 deploydocs(;
     repo = "github.com/JuliaSpacePhysics/MultiSpacecraftAnalysis.jl",
-    devbranch = "main",
+    push_preview = true,
 )

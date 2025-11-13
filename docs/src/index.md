@@ -11,6 +11,13 @@ CurrentModule = MultiSpacecraftAnalysis
 Modules = [MultiSpacecraftAnalysis]
 ```
 
+## Installation
+
+```julia
+using Pkg
+Pkg.add("MultiSpacecraftAnalysis")
+```
+
 ## Reciprocal vectors
 
 [paschmannMultispacecraftAnalysisMethods2008; Chapter 4](@citet), [paschmannAnalysisMethodsMultispacecraft2000; Chapter 14](@citet), 
