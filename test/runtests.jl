@@ -1,6 +1,7 @@
 using MultiSpacecraftAnalysis
 using Test
 using Aqua
+using PythonCall
 
 @testset "Code quality (Aqua.jl)" begin
     Aqua.test_all(MultiSpacecraftAnalysis)
@@ -19,7 +20,6 @@ _is_approx(x::AbstractArray, y::AbstractArray; kw...) = all(_is_approx.(x, y; kw
     # Reference: https://github.com/spedas/pyspedas/blob/master/pyspedas/projects/mms/tests/test_mms_curlometer.py#L4
     # https://github.com/spedas/pyspedas/blob/283bc4ce21a302af3b894451b489a6175dd8fd5d/pyspedas/projects/mms/fgm_tools/mms_lingradest.py#L8
     using PySPEDAS
-    using PythonCall
 
     @py import pyspedas.projects.mms.tests.test_mms_curlometer: CurlTestCases
     @py import pyspedas.projects.mms.fgm_tools.mms_lingradest: mms_lingradest
