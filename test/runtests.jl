@@ -48,3 +48,14 @@ _is_approx(x::AbstractArray, y::AbstractArray; kw...) = all(_is_approx.(x, y; kw
     @test _is_approx(res.R_c ./ scale, get_data("Rc_1000km_lingradest"))
     @test _is_approx(res.curl .* scale .* 0.8, get_data("jtotal_lingradest"))
 end
+
+
+@testset "Reciprocal vector" begin
+    r1 = [64278.6, 17683.5, -2512.4]
+    r2 = [64276.4, 17704.7, -2514.06]
+    r3 = [64291.1, 17697.7, -2514.05]
+    r4 = [64282.6, 17697.4, -2525.76]
+    rv = [-0.022940724814179882, -0.04814997115792451, 0.01788566629102226]
+    @test reciprocal_vector(r1, r2, r3, r4) == rv
+    @test reciprocal_vector(r1, [r2, r3, r4]) == reciprocal_vector(r1, (r2, r3, r4)) ≈ rv
+end
