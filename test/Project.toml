@@ -1,3 +1,6 @@
 [deps]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+MultiSpacecraftAnalysis = "162efcab-a561-4df9-ac40-20243229ff2c"
+PySPEDAS = "668d2cef-03a7-4c36-a521-7d1c6ddc8846"
+PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
