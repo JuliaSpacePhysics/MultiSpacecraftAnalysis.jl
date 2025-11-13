@@ -1,6 +1,6 @@
 name = "MultiSpacecraftAnalysis"
 uuid = "162efcab-a561-4df9-ac40-20243229ff2c"
-version = "1.0.0-DEV"
+version = "0.1.0"
 authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
 
 [workspace]
