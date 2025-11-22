@@ -72,8 +72,10 @@ end
     lingradest(B1, args...)
 
 Vectorized method for simplified usage. Returns a `StructArray` containing the results.
+
+Set `flatten = true` to flatten the output arrays, making the output shape similar to the input array shape.
 """
-Base.@constprop :aggressive function lingradest(args::AbstractMatrix...; dim = 1)
+Base.@constprop :aggressive function lingradest(args::AbstractMatrix...; dim = 1, flatten = false)
     new_args = map(args) do arg
         eachslice(arg; dims = dim)
     end
@@ -81,10 +83,10 @@ Base.@constprop :aggressive function lingradest(args::AbstractMatrix...; dim = 1
     # Alternative methods (much slower)
     ## s = StructArray(Broadcast.instantiate(Broadcast.broadcasted(_fast_lingradest, new_args...)))
     ## s = StructArray(Iterators.map(_fast_lingradest, new_args...))
-    return map(StructArrays.components(s)) do c
-        a = flatview(c)
-        dim == 1 && ndims(a) == 2 ? a' : a
-    end
+    return flatten ? map(StructArrays.components(s)) do c
+            a = flatview(c)
+            dim == 1 && ndims(a) == 2 ? a' : a
+    end : s
 end
 
 """
@@ -111,3 +113,37 @@ function lingradest(
 
     return lingradest(B1, B2, B3, B4, R1, R2, R3, R4)
 end
+
+
+const lingradest_metadata = Dict(
+    :Bmag => Dict(
+        :name => "B",
+        :desc => "Magnetic field magnitude at the barycenter",
+        :unit => "nT",
+    ),
+    :Bbc => Dict(
+        :name => "𝐁",
+        :desc => "Magnetic field at the barycenter",
+        :unit => "nT",
+    ),
+    :div => Dict(
+        :name => "∇ ⋅ 𝐁",
+        :desc => "Linear divergence estimator",
+        :unit => "nT/km",
+    ),
+    :curl => Dict(
+        :name => "∇ × 𝐁",
+        :desc => "Linear curl estimator",
+        :unit => "nT/km",
+    ),
+    :curv => Dict(
+        :name => "𝐛 · ∇𝐛",
+        :desc => "Field-line curvature vector: 𝐛 · ∇𝐛",
+        :unit => "nT/km",
+    ),
+    :R_c => Dict(
+        :name => "R_c",
+        :desc => "Field-line curvature radius",
+        :unit => "km",
+    ),
+)

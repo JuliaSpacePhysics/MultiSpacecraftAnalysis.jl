@@ -4,13 +4,6 @@ CurrentModule = MultiSpacecraftAnalysis
 
 # MultiSpacecraftAnalysis
 
-```@index
-```
-
-```@autodocs
-Modules = [MultiSpacecraftAnalysis]
-```
-
 ## Installation
 
 ```julia
@@ -52,6 +45,16 @@ lingradest
 ```@docs
 ConstantVelocityApproach
 ```
+
+## API
+
+```@index
+```
+
+```@autodocs
+Modules = [MultiSpacecraftAnalysis]
+```
+
 
 
 ```@bibliography
