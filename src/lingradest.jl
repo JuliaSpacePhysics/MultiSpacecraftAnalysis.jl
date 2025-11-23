@@ -62,10 +62,10 @@ end
     return (∇𝐛' * Bbc) / (Bmag^2)
 end
 
-function _fast_lingradest(B1, B2, B3, B4, R1, R2, R3, R4)
-    T = Base.promote_eltype(B1, B2, B3, B4, R1, R2, R3, R4)
+@inline function _fast_lingradest(args...)
+    T = Base.promote_eltype(args...)
     SV3 = SVector{3, T}
-    return _lingradest(SV3(B1), SV3(B2), SV3(B3), SV3(B4), SV3(R1), SV3(R2), SV3(R3), SV3(R4))
+    return _lingradest(SV3.(args)...)
 end
 
 """
