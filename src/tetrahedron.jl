@@ -16,7 +16,7 @@ end
 """
     volumetric_tensor(rs::AbstractVector{<:AbstractVector})
 
-``\frac{1}{N} 𝐑'``.
+``\\frac{1}{N} 𝐑'``.
 
 See also: [`position_tensor`](@ref)
 """

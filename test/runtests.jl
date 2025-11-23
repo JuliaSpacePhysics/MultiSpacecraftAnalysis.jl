@@ -14,12 +14,18 @@ end
 
 # skip nan
 _is_approx(x, y; kw...) = isnan(x) && isnan(y) || isapprox(x, y; kw...)
-_is_approx(x::AbstractArray, y::AbstractArray; kw...) = all(_is_approx.(x, y; kw...))
+function _is_approx(x::AbstractArray, y::AbstractArray; kw...)
+    for i in eachindex(x, y)
+        _is_approx(x[i], y[i]; kw...) || return false
+    end
+    return true
+end
 
 @testset "Cross validation with PySPEDAS.jl" begin
     # Reference: https://github.com/spedas/pyspedas/blob/master/pyspedas/projects/mms/tests/test_mms_curlometer.py#L4
     # https://github.com/spedas/pyspedas/blob/283bc4ce21a302af3b894451b489a6175dd8fd5d/pyspedas/projects/mms/fgm_tools/mms_lingradest.py#L8
     using PySPEDAS
+    using DimensionalData
 
     @py import pyspedas.projects.mms.tests.test_mms_curlometer: CurlTestCases
     @py import pyspedas.projects.mms.fgm_tools.mms_lingradest: mms_lingradest
@@ -30,11 +36,11 @@ _is_approx(x::AbstractArray, y::AbstractArray; kw...) = all(_is_approx.(x, y; kw
     field_names = ["mms1_fgm_b_gse_brst_l2", "mms2_fgm_b_gse_brst_l2_i", "mms3_fgm_b_gse_brst_l2_i", "mms4_fgm_b_gse_brst_l2_i"]
     position_names = ["mms1_fgm_r_gse_brst_l2_i", "mms2_fgm_r_gse_brst_l2_i", "mms3_fgm_r_gse_brst_l2_i", "mms4_fgm_r_gse_brst_l2_i"]
 
-    func(x) = get_data(x)[:, 1:3]
+    func(x) = DimArray(get_data(x))[:, 1:3]
     fields = func.(field_names)
     positions = func.(position_names)
 
-    res = lingradest(fields..., positions...)
+    res = lingradest(fields..., positions...; flatten = true)
 
     @test _is_approx(res.Bbc, get_data("Bbc_lingradest")[:, 2:4])
     @test _is_approx(res.Bmag, get_data("Bt_lingradest"))
