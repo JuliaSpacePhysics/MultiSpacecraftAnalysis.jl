@@ -1,5 +1,8 @@
 # MultiSpacecraftAnalysis
 
+[![DOI](https://zenodo.org/badge/1095241504.svg)](https://doi.org/10.5281/zenodo.17686011)
+[![version](https://juliahub.com/docs/General/MultiSpacecraftAnalysis/stable/version.svg)](https://juliahub.com/ui/Packages/General/MultiSpacecraftAnalysis)
+
 [![Build Status](https://github.com/JuliaSpacePhysics/MultiSpacecraftAnalysis.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaSpacePhysics/MultiSpacecraftAnalysis.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/JuliaSpacePhysics/MultiSpacecraftAnalysis.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaSpacePhysics/MultiSpacecraftAnalysis.jl)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)

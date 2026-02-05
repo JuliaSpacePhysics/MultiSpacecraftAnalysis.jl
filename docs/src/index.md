@@ -4,6 +4,11 @@ CurrentModule = MultiSpacecraftAnalysis
 
 # MultiSpacecraftAnalysis
 
+Multi-spacecraft analysis methods in Julia.
+
+[![DOI](https://zenodo.org/badge/1095241504.svg)](https://doi.org/10.5281/zenodo.17686011)
+[![version](https://juliahub.com/docs/General/MultiSpacecraftAnalysis/stable/version.svg)](https://juliahub.com/ui/Packages/General/MultiSpacecraftAnalysis)
+
 ## Installation
 
 ```julia
