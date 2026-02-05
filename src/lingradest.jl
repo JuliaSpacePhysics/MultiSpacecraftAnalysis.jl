@@ -15,9 +15,9 @@ A named tuple containing:
   • Bbc: Magnetic field at the barycenter
   • Bmag: Magnetic field magnitude at the barycenter
   • LGBx, LGBy, LGBz: Linear gradient estimators for each component
-  • LD: Linear divergence estimator
-  • LCB: Linear curl estimator
-  • curvature: Field-line curvature vector: 𝐛 · ∇𝐛
+  • div: Linear divergence estimator
+  • curl: Linear curl estimator
+  • curv: Field-line curvature vector: 𝐛 · ∇𝐛
   • R_c: Field-line curvature radius
 
 # References
@@ -25,7 +25,7 @@ Based on the method of Chanteur (ISSI, 1998, Ch. 11).
 - [lingradest.pro](https://github.com/spedas/bleeding_edge/blob/master/projects/mms/common/curlometer/lingradest.pro)
 - [lingradest.py](https://github.com/spedas/pyspedas/blob/master/pyspedas/analysis/lingradest.py#L5)
 """
-function _lingradest(B1, B2, B3, B4, R1, R2, R3, R4)
+function lingradest(B1, B2, B3, B4, R1, R2, R3, R4)
     Rs = (R1, R2, R3, R4)
     Bs = (B1, B2, B3, B4)
 
@@ -65,11 +65,11 @@ end
 @inline function _fast_lingradest(args...)
     T = Base.promote_eltype(args...)
     SV3 = SVector{3, T}
-    return _lingradest(SV3.(args)...)
+    return lingradest(SV3.(args)...)
 end
 
 """
-    lingradest(B1, args...)
+    lingradest(B1::AbstractMatrix, args...; dim = 1, flatten = false)
 
 Vectorized method for simplified usage. Returns a `StructArray` containing the results.
 

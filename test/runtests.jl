@@ -33,8 +33,8 @@ end
     pytest.test_lingradest()
 
 
-    field_names = ["mms1_fgm_b_gse_brst_l2", "mms2_fgm_b_gse_brst_l2_i", "mms3_fgm_b_gse_brst_l2_i", "mms4_fgm_b_gse_brst_l2_i"]
-    position_names = ["mms1_fgm_r_gse_brst_l2_i", "mms2_fgm_r_gse_brst_l2_i", "mms3_fgm_r_gse_brst_l2_i", "mms4_fgm_r_gse_brst_l2_i"]
+    field_names = ("mms1_fgm_b_gse_brst_l2", "mms2_fgm_b_gse_brst_l2_i", "mms3_fgm_b_gse_brst_l2_i", "mms4_fgm_b_gse_brst_l2_i")
+    position_names = ("mms1_fgm_r_gse_brst_l2_i", "mms2_fgm_r_gse_brst_l2_i", "mms3_fgm_r_gse_brst_l2_i", "mms4_fgm_r_gse_brst_l2_i")
 
     func(x) = DimArray(get_data(x))[:, 1:3]
     fields = func.(field_names)
