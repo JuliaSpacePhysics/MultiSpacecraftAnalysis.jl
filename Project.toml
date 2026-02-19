@@ -22,7 +22,7 @@ MultiSpacecraftAnalysisDimensionalDataExt = "DimensionalData"
 
 [compat]
 ArraysOfArrays = "0.6"
-DimensionalData = "0.29"
+DimensionalData = "0.29, 0.30"
 LinearAlgebra = "1"
 MappedArrays = "0.4"
 StaticArrays = "1.9"
