@@ -80,7 +80,7 @@ PickFields{N}(f::F) where {N, F} = PickFields{N, F}(f)
 @inline (p::PickFields{N})(args...) where {N} = NamedTuple{N}(p.f(args...))
 
 """
-    lingradest(B1::AbstractMatrix, args...; dim = 1, flatten = false, select = nothing)
+    lingradest(B1::AbstractMatrix, args...; dim = 1, flatten = true, select = nothing)
 
 Vectorized method for simplified usage. Returns a `StructArray` containing the results.
 
@@ -88,7 +88,7 @@ Set `flatten = true` to flatten the output arrays, making the output shape simil
 
 Pass `select = (:field1, :field2, ...)` to materialize only the listed columns.
 """
-Base.@constprop :aggressive function lingradest(args::AbstractMatrix...; dim = 1, flatten = false, kw...)
+Base.@constprop :aggressive function lingradest(args::AbstractMatrix...; dim = 1, flatten = true, kw...)
     s = StructArray(lingradest_lazy(args...; dim, kw...))
     return flatten ? map(StructArrays.components(s)) do c
             a = flatview(c)

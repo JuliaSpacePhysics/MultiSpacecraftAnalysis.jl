@@ -14,7 +14,7 @@ _dimnum(x, dim) = hasdim(x, dim) ? dimnum(x, dim) : nothing
 Method for handling dimensional arrays. Takes `AbstractDimArray` inputs with a time dimension
 and returns a `DimStack` containing all computed quantities.
 """
-function MultiSpacecraftAnalysis.lingradest(B1::AbstractDimMatrix, args::AbstractDimMatrix...; flatten = false, dim = nothing, kw...)
+function MultiSpacecraftAnalysis.lingradest(B1::AbstractDimMatrix, args::AbstractDimMatrix...; flatten = true, dim = nothing, kw...)
     dim = @something dim _dimnum(B1, TimeDim) 1
     time = dims(B1, dim)
     out = lingradest(parent(B1), parent.(args)...; dim, flatten, kw...)

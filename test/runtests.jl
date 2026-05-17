@@ -56,6 +56,38 @@ end
 end
 
 
+@testset "tlingradest" begin
+    using DimensionalData
+    using Dates
+
+    N = 64
+    t = DateTime(2020) .+ Second.(0:N-1)
+    mkdim(data) = DimArray(data, (Ti(t), Y(1:3)))
+    fields = ntuple(_ -> mkdim(randn(N, 3)), 4)
+    positions = (
+        mkdim(randn(N, 3)),
+        mkdim(randn(N, 3) .+ reshape([10.0, 0, 0], 1, 3)),
+        mkdim(randn(N, 3) .+ reshape([0.0, 10, 0], 1, 3)),
+        mkdim(randn(N, 3) .+ reshape([0.0, 0, 10], 1, 3)),
+    )
+
+    # Same timestamps path
+    out = tlingradest(fields, positions)
+    @test out isa DimStack
+    @test :Bbc in propertynames(out)
+    @test :div in propertynames(out)
+    @test :curl in propertynames(out)
+
+    # Differing timestamps path (resync via tsync)
+    t2 = DateTime(2020) .+ Second.(0:N-1) .+ Millisecond(500)
+    positions2 = (
+        DimArray(parent(positions[1]), (Ti(t2), Y(1:3))),
+        positions[2:4]...,
+    )
+    out2 = tlingradest(fields, positions2)
+    @test out2 isa DimStack
+end
+
 @testset "lingradest select kwarg" begin
     N = 64
     BM = ntuple(_ -> randn(N, 3), 4)
