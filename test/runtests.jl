@@ -56,6 +56,22 @@ end
 end
 
 
+@testset "lingradest select kwarg" begin
+    N = 64
+    BM = ntuple(_ -> randn(N, 3), 4)
+    RM = (
+        randn(N, 3) .+ reshape([0.0, 0, 0], 1, 3),
+        randn(N, 3) .+ reshape([10.0, 0, 0], 1, 3),
+        randn(N, 3) .+ reshape([0.0, 10, 0], 1, 3),
+        randn(N, 3) .+ reshape([0.0, 0, 10], 1, 3),
+    )
+    full = lingradest(BM..., RM...)
+    sel = lingradest(BM..., RM...; select = (:Bmag, :div))
+    @test propertynames(sel) == (:Bmag, :div)
+    @test sel.Bmag == full.Bmag
+    @test sel.div == full.div
+end
+
 @testset "Reciprocal vector" begin
     r1 = [64278.6, 17683.5, -2512.4]
     r2 = [64276.4, 17704.7, -2514.06]
