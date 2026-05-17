@@ -60,5 +60,5 @@ function reciprocal_vector(rα, r0s)
     r_all = (rα, r0s...)
     r̄ = mean(r_all)
     𝐑 = position_tensor(r_all, r̄)
-    return inv(𝐑) * (rα - r̄)
+    return 𝐑 \ (rα - r̄)
 end

@@ -24,7 +24,7 @@ function ConstantVelocityApproach(positions, times)
     Δts = times[2:end] .- times[1]
     # Calculate position differences relative to first spacecraft
     D = reduce(hcat, [r - positions[1] for r in positions[2:end]])'
-    m = inv(D) * Δts
+    m = D \ Δts
     return m2nV(m)
 end
 

@@ -1,5 +1,3 @@
-outer(x, y) = x * y'
-
 """
     lingradest(B1, B2, B3, B4, R1, R2, R3, R4)
 
@@ -26,6 +24,8 @@ Based on the method of Chanteur (ISSI, 1998, Ch. 11).
 - [lingradest.py](https://github.com/spedas/pyspedas/blob/master/pyspedas/analysis/lingradest.py#L5)
 """
 function lingradest(B1, B2, B3, B4, R1, R2, R3, R4)
+    outer(x, y) = x * y'
+
     Rs = (R1, R2, R3, R4)
     Bs = (B1, B2, B3, B4)
 
