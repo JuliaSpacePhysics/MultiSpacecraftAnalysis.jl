@@ -68,25 +68,40 @@ end
     return lingradest(SV3.(args)...)
 end
 
+# Compose any callable with a NamedTuple projection so
+# downstream materialization only includes the selected columns.
+# Equivalent to `args... -> NamedTuple{N}(f(args...))`
+# but with the reliable inlining / dispatch behavior.
+struct PickFields{Names, F}
+    f::F
+end
+PickFields{N}(f::F) where {N, F} = PickFields{N, F}(f)
+
+@inline (p::PickFields{N})(args...) where {N} = NamedTuple{N}(p.f(args...))
+
 """
-    lingradest(B1::AbstractMatrix, args...; dim = 1, flatten = false)
+    lingradest(B1::AbstractMatrix, args...; dim = 1, flatten = false, select = nothing)
 
 Vectorized method for simplified usage. Returns a `StructArray` containing the results.
 
 Set `flatten = true` to flatten the output arrays, making the output shape similar to the input array shape.
+
+Pass `select = (:field1, :field2, ...)` to materialize only the listed columns.
 """
-Base.@constprop :aggressive function lingradest(args::AbstractMatrix...; dim = 1, flatten = false)
-    new_args = map(args) do arg
-        eachslice(arg; dims = dim)
-    end
-    s = StructArray(mappedarray(_fast_lingradest, new_args...))
-    # Alternative methods (much slower)
-    ## s = StructArray(Broadcast.instantiate(Broadcast.broadcasted(_fast_lingradest, new_args...)))
-    ## s = StructArray(Iterators.map(_fast_lingradest, new_args...))
+Base.@constprop :aggressive function lingradest(args::AbstractMatrix...; dim = 1, flatten = false, kw...)
+    s = StructArray(lingradest_lazy(args...; dim, kw...))
     return flatten ? map(StructArrays.components(s)) do c
             a = flatview(c)
             dim == 1 && ndims(a) == 2 ? a' : a
     end : s
+end
+
+@inline function lingradest_lazy(args...; dim = 1, select = nothing)
+    new_args = map(args) do arg
+        eachslice(arg; dims = dim)
+    end
+    f = isnothing(select) ? _fast_lingradest : PickFields{select}(_fast_lingradest)
+    return mappedarray(f, new_args...)
 end
 
 """
