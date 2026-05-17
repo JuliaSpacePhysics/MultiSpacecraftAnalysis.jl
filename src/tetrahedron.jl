@@ -25,7 +25,7 @@ volumetric_tensor(rs::AbstractVector{<:AbstractVector}) = position_tensor(rs) / 
 """Calculate tetrahedron quality factors"""
 function tetrahedron_quality(rs::AbstractVector{<:AbstractVector})
     Rvol = volumetric_tensor(rs)
-    # Calculate eigenvaluesz and eigenvectors
+    # Calculate eigenvalues and eigenvectors
     F = eigen(Rvol, sortby = x -> -abs(x)) # Note: we want descending order
     semiaxes = sqrt.(F.values)  # sqrt of eigenvalues
     eigenvectors = F.vectors

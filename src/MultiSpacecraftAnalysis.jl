@@ -12,7 +12,6 @@ export ConstantVelocityApproach, CVA
 export reciprocal_vector, reciprocal_vectors
 export position_tensor, volumetric_tensor, tetrahedron_quality
 
-include("utils.jl")
 include("reciprocal_vector.jl")
 include("tetrahedron.jl")
 include("lingradest.jl")
