@@ -96,6 +96,16 @@ end
     @test sel.div ≈ full.div
 end
 
+@testset "CVA recovers a planar boundary" begin
+    n = normalize(randn(3))
+    V = 7.0
+    positions = [10 .* randn(3) for _ in 1:5]
+    times = [dot(r, n) / V + 3 for r in positions]
+    res = CVA(positions, times)
+    @test res.n ≈ n
+    @test res.V ≈ V
+end
+
 @testset "Reciprocal vector" begin
     r1 = [64278.6, 17683.5, -2512.4]
     r2 = [64276.4, 17704.7, -2514.06]

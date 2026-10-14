@@ -10,14 +10,11 @@ function m2nV(m)
 end
 
 """
+    ConstantVelocityApproach(positions, times)
     CVA(positions, times)
 
-Constant Velocity Approach (CVA) for determining boundary normal and velocity.
-Solve timing equation: ``D * m = Δts``
-
-Parameters:
-- positions: Positions of 4 spacecraft (4×3 array)
-- times: Times of boundary crossing for each spacecraft
+Constant Velocity Approach (CVA): boundary normal `n` and speed `V` from the crossing `times` at N ≥ 4 spacecraft
+`positions` (a collection of 3-vectors), solving the timing equation ``(𝐫_α - 𝐫_1) ⋅ 𝐧 / V = t_α - t_1`` (least squares for N > 4).
 """
 function ConstantVelocityApproach(positions, times)
     # Calculate time delays relative to first spacecraft
