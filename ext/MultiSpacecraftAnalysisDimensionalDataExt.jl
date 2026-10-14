@@ -3,21 +3,23 @@ module MultiSpacecraftAnalysisDimensionalDataExt
 using DimensionalData
 using MultiSpacecraftAnalysis
 using DimensionalData: TimeDim, dims, hasdim, dimnum
-import MultiSpacecraftAnalysis: lingradest, lingradest_metadata
+import MultiSpacecraftAnalysis: lingradest, lingradest_metadata, MatrixSet
 
 # A no-error version of `dimnum`
 _dimnum(x, dim) = hasdim(x, dim) ? dimnum(x, dim) : nothing
 
-"""
-    lingradest(B1::AbstractDimArray, args...)
+const DimMatrixSet = Union{Tuple{Vararg{AbstractDimMatrix}}, AbstractVector{<:AbstractDimMatrix}}
 
-Method for handling dimensional arrays. Takes `AbstractDimArray` inputs with a time dimension
-and returns a `DimStack` containing all computed quantities.
 """
-function MultiSpacecraftAnalysis.lingradest(B1::AbstractDimMatrix, args::AbstractDimMatrix...; flatten = false, dim = nothing, kw...)
+    lingradest(Bs::DimMatrixSet, Rs; dim = nothing, kw...)
+
+`Bs` as `AbstractDimMatrix`es: `dim` defaults to their time dimension, and the result is a `DimStack`.
+"""
+function MultiSpacecraftAnalysis.lingradest(Bs::DimMatrixSet, Rs::MatrixSet; flatten = false, dim = nothing, kw...)
+    B1 = first(Bs)
     dim = @something dim _dimnum(B1, TimeDim) 1
     time = dims(B1, dim)
-    out = lingradest(parent(B1), parent.(args)...; dim, flatten, kw...)
+    out = lingradest(map(parent, Bs), map(parent, Rs); dim, flatten, kw...)
     names = propertynames(out)
     das = map(names) do name
         data = getproperty(out, name)

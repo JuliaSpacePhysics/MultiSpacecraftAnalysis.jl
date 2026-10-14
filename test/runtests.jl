@@ -1,5 +1,7 @@
 using MultiSpacecraftAnalysis
 using Test
+using LinearAlgebra
+using StaticArrays
 using Aqua
 using PythonCall
 
@@ -55,6 +57,28 @@ end
     @test _is_approx(res.curl .* scale .* 0.8, get_data("jtotal_lingradest"))
 end
 
+
+@testset "lingradest is exact for linear fields" begin
+    G = @SMatrix randn(3, 3)  # G[i, j] = ∂_i B_j
+    B0 = @SVector randn(3)
+    field(r) = B0 + G' * r
+    curlG = SVector(G[2, 3] - G[3, 2], G[3, 1] - G[1, 3], G[1, 2] - G[2, 1])
+    for n in (4, 6)
+        Rs = ntuple(_ -> 10 * @SVector(randn(3)), n)
+        res = lingradest(map(field, Rs), Rs)
+        @test hcat(res.LGBx, res.LGBy, res.LGBz) ≈ G
+        @test res.div ≈ tr(G)
+        @test res.curl ≈ curlG
+        @test res.Bbc ≈ field(res.Rbary)
+    end
+
+    N, n = 8, 5
+    Rs = [10 .* randn(N, 3) for _ in 1:n]
+    Bs = [stack(field, eachrow(R); dims = 1) for R in Rs]
+    res = lingradest(Bs, Rs)
+    @test all(≈(curlG), res.curl)
+    @test all(≈(tr(G)), res.div)
+end
 
 @testset "lingradest select kwarg" begin
     N = 64

@@ -1,17 +1,14 @@
 """
-    lingradest(B1, B2, B3, B4, R1, R2, R3, R4)
+    lingradest(Bs, Rs)
 
-Compute spatial derivatives such as grad, div, curl and curvature using reciprocal vector technique (linear interpolation).
-
-# Arguments
-- `B1, B2, B3, B4`: 3-element vectors giving magnetic field measurements at each probe
-- `R1, R2, R3, R4`: 3-element vectors giving the probe positions
+Compute spatial derivatives such as grad, div, curl and curvature using the reciprocal vector technique (linear interpolation),
+from field vectors `Bs` measured at positions `Rs` by N ≥ 4 spacecraft.
 
 # Returns
 A named tuple containing:
   • Rbary: Barycenter position
-  • Bbc: Magnetic field at the barycenter
-  • Bmag: Magnetic field magnitude at the barycenter
+  • Bbc: Field at the barycenter
+  • Bmag: Field magnitude at the barycenter
   • LGBx, LGBy, LGBz: Linear gradient estimators for each component
   • div: Linear divergence estimator
   • curl: Linear curl estimator
@@ -23,23 +20,17 @@ Based on the method of Chanteur (ISSI, 1998, Ch. 11).
 - [lingradest.pro](https://github.com/spedas/bleeding_edge/blob/master/projects/mms/common/curlometer/lingradest.pro)
 - [lingradest.py](https://github.com/spedas/pyspedas/blob/master/pyspedas/analysis/lingradest.py#L5)
 """
-function lingradest(B1, B2, B3, B4, R1, R2, R3, R4)
-    outer(x, y) = x * y'
+function lingradest(Bs, Rs)
+    Rbary = sum(Rs) / length(Rs)
+    ks = reciprocal_vectors(Rs)
 
-    Bs = (B1, B2, B3, B4)
-
-    Rbary = (R1 .+ R2 .+ R3 .+ R4) ./ 4
-    ks = reciprocal_vectors(R1, R2, R3, R4)
-
-    # Linear estimate of 𝐁 at the barycenter: weights 1 + 𝒌_α ⋅ (Rbary - 𝐫_α) are all exactly 1/4
-    Bbc = (B1 .+ B2 .+ B3 .+ B4) ./ 4
+    # Interpolation weights 1/N + 𝒌_α ⋅ (𝐫 - Rbary) are all 1/N at the barycenter
+    Bbc = sum(Bs) / length(Bs)
     Bmag = norm(Bbc)
 
-    # Linear estimator
-    div = sum(dot.(ks, Bs))
-    curl = sum(cross.(ks, Bs))
-    ∇𝐛 = sum(outer.(ks, Bs))
-    # Field-line curvature
+    div = sum(map(dot, ks, Bs))
+    curl = sum(map(cross, ks, Bs))
+    ∇𝐛 = sum(map((k, B) -> k * B', ks, Bs))
     curv = curvature(∇𝐛, Bbc, Bmag)
     R_c = 1 / norm(curv)
 
@@ -58,12 +49,6 @@ end
     return (∇𝐛' * Bbc) / (Bmag^2)
 end
 
-@inline function _fast_lingradest(args...)
-    T = Base.promote_eltype(args...)
-    SV3 = SVector{3, T}
-    return @inline lingradest(SV3.(args)...)
-end
-
 # Compose any callable with a NamedTuple projection so
 # downstream materialization only includes the selected columns.
 # Equivalent to `args... -> NamedTuple{N}(f(args...))`
@@ -75,18 +60,30 @@ PickFields{N}(f::F) where {N, F} = PickFields{N, F}(f)
 
 @inline (p::PickFields{N})(args...) where {N} = NamedTuple{N}(p.f(args...))
 
-"""
-    lingradest(B1::AbstractMatrix, args...; dim = 1, flatten = false, select = nothing)
+# One time sample: `n` field slices then `n` position slices, as SVectors.
+struct RowKernel{n, T} end
 
-Vectorized method for simplified usage. Returns a `StructArray` containing the results.
+@inline function (::RowKernel{n, T})(slices...) where {n, T}
+    vs = map(SVector{3, T}, slices)
+    return @inline lingradest(ntuple(i -> vs[i], Val(n)), ntuple(i -> vs[n + i], Val(n)))
+end
+
+const MatrixSet = Union{Tuple{Vararg{AbstractMatrix}}, AbstractVector{<:AbstractMatrix}}
+
+"""
+    lingradest(Bs, Rs; dim = 1, flatten = false, select = nothing)
+
+Time-series method: `Bs` and `Rs` are tuples or vectors of matrices, each with time along `dim`. Returns a `StructArray` containing the results.
 
 Set `flatten = true` to flatten the output arrays, making the output shape similar to the input array shape.
 
 Pass `select = (:field1, :field2, ...)` to materialize only the listed columns.
 """
-Base.@constprop :aggressive function lingradest(args::AbstractMatrix...; dim = 1, flatten = false, select = nothing)
-    f = isnothing(select) ? _fast_lingradest : PickFields{select}(_fast_lingradest)
-    s = StructArray(mappedarray(f, map(a -> eachslice(a; dims = dim), args)...))
+Base.@constprop :aggressive function lingradest(Bs::MatrixSet, Rs::MatrixSet; dim = 1, flatten = false, select = nothing)
+    length(Bs) == length(Rs) || throw(DimensionMismatch("$(length(Bs)) fields but $(length(Rs)) positions"))
+    row = RowKernel{length(Bs), Base.promote_eltype(Bs..., Rs...)}()
+    f = isnothing(select) ? row : PickFields{select}(row)
+    s = StructArray(mappedarray(f, map(a -> eachslice(a; dims = dim), (Bs..., Rs...))...))
     flatten || return s
     return map(StructArrays.components(s)) do c
         eltype(c) <: Number && return c
@@ -94,6 +91,9 @@ Base.@constprop :aggressive function lingradest(args::AbstractMatrix...; dim = 1
         dim == 1 ? transpose(a) : a
     end
 end
+
+Base.@constprop :aggressive lingradest(B1, B2, B3, B4, R1, R2, R3, R4; kw...) =
+    lingradest((B1, B2, B3, B4), (R1, R2, R3, R4); kw...)
 
 """
     lingradest(
@@ -111,45 +111,33 @@ function lingradest(
         Bz1, Bz2, Bz3, Bz4,
         R1, R2, R3, R4
     )
-    # Construct magnetic field vectors
-    B1 = hcat(Bx1, By1, Bz1)
-    B2 = hcat(Bx2, By2, Bz2)
-    B3 = hcat(Bx3, By3, Bz3)
-    B4 = hcat(Bx4, By4, Bz4)
-
-    return lingradest(B1, B2, B3, B4, R1, R2, R3, R4)
+    Bs = (hcat(Bx1, By1, Bz1), hcat(Bx2, By2, Bz2), hcat(Bx3, By3, Bz3), hcat(Bx4, By4, Bz4))
+    return lingradest(Bs, (R1, R2, R3, R4))
 end
-
 
 const lingradest_metadata = Dict(
     :Bmag => Dict(
         :name => "B",
         :desc => "Magnetic field magnitude at the barycenter",
-        :unit => "nT",
     ),
     :Bbc => Dict(
         :name => "𝐁",
         :desc => "Magnetic field at the barycenter",
-        :unit => "nT",
     ),
     :div => Dict(
         :name => "∇ ⋅ 𝐁",
         :desc => "Linear divergence estimator",
-        :unit => "nT/km",
     ),
     :curl => Dict(
         :name => "∇ × 𝐁",
         :desc => "Linear curl estimator",
-        :unit => "nT/km",
     ),
     :curv => Dict(
         :name => "𝐛 · ∇𝐛",
         :desc => "Field-line curvature vector: 𝐛 · ∇𝐛",
-        :unit => "nT/km",
     ),
     :R_c => Dict(
         :name => "R_c",
         :desc => "Field-line curvature radius",
-        :unit => "km",
     ),
 )

@@ -1,9 +1,21 @@
 """
-Compute the set of reciprocal vectors {``𝒌_α``}, which is also called the reciprocal base of the tetrahedron.
+    reciprocal_vectors(rs)
 
-See also: [`reciprocal_vector`](@ref)
+Reciprocal vectors {``𝒌_α``} of N ≥ 4 positions `rs`. For N = 4 this is the reciprocal base of the tetrahedron;
+otherwise the generalized reciprocal vectors ``𝐪_α = 𝐑^{-1} (𝐫_α - 𝐫_b)``, which coincide with it at N = 4.
+
+See also: [`position_tensor`](@ref)
+
+# References
+- Vogt, Paschmann & Chanteur (2008), Reciprocal vectors, in Multi-spacecraft analysis methods revisited, ISSI SR-008, Ch. 4.
 """
-@inline function reciprocal_vectors(r1, r2, r3, r4)
+function reciprocal_vectors(rs)
+    r̄ = sum(rs) / length(rs)
+    𝐑 = position_tensor(rs, r̄)
+    return map(r -> 𝐑 \ (r - r̄), rs)
+end
+
+@inline function reciprocal_vectors((r1, r2, r3, r4)::NTuple{4, Any})
     # Edges from vertex 4 share one triple product; ∑ 𝒌_α = 0 gives 𝒌_4.
     a, b, c = r1 - r4, r2 - r4, r3 - r4
     n1, n2, n3 = cross(b, c), cross(c, a), cross(a, b)
@@ -11,6 +23,8 @@ See also: [`reciprocal_vector`](@ref)
     k1, k2, k3 = n1 / V, n2 / V, n3 / V
     return (k1, k2, k3, -(k1 + k2 + k3))
 end
+
+reciprocal_vectors(r1, r2, r3, r4) = reciprocal_vectors((r1, r2, r3, r4))
 
 """
     reciprocal_vector(r_βα, r_βγ, r_βλ)

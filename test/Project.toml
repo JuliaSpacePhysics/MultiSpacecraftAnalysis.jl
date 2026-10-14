@@ -1,13 +1,17 @@
 [deps]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MultiSpacecraftAnalysis = "162efcab-a561-4df9-ac40-20243229ff2c"
 PySPEDAS = "668d2cef-03a7-4c36-a521-7d1c6ddc8846"
 PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 Aqua = "0.8"
+LinearAlgebra = "1"
 DimensionalData = "0.29, 0.30"
 PySPEDAS = "0.2"
 PythonCall = "0.9"
+StaticArrays = "1.9"
