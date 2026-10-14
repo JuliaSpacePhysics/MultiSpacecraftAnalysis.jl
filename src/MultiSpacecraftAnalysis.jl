@@ -3,6 +3,7 @@ module MultiSpacecraftAnalysis
 using LinearAlgebra
 using StructArrays
 using MappedArrays: mappedarray
+using PrecompileTools: @setup_workload, @compile_workload
 using StaticArrays
 using Statistics: mean
 
@@ -19,5 +20,11 @@ include("timing.jl")
 const CVA = ConstantVelocityApproach
 const CTA = ConstantThicknessApproach
 const DA = DiscontinuityAnalyzer
+
+@setup_workload begin
+    Bs = ntuple(_ -> ones(2, 3), 4)
+    Rs = ntuple(i -> repeat(Float64.((1:3)' .== i), 2), 4)
+    @compile_workload lingradest(Bs..., Rs...)
+end
 
 end
