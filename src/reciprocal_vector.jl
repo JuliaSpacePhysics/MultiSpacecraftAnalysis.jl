@@ -16,8 +16,11 @@ See also: [`position_tensor`](@ref)
 - Vogt, Paschmann & Chanteur (2008), Reciprocal vectors, in Multi-spacecraft analysis methods revisited, ISSI SR-008, Ch. 4.
 """
 @inline function reciprocal_vectors(rs)
-    r̄ = sum(rs) / length(rs)
-    ds = map(r -> r - r̄, rs)
+    # Offsets from one spacecraft are exact for separations ≪ |𝐫|.
+    r₀ = first(rs)
+    ds = map(r -> r - r₀, rs)
+    d̄ = sum(ds) / length(ds)
+    ds = map(d -> d - d̄, ds)
     X = reduce(hcat, ds)
     𝐑 = X * X'
     # 𝐑⁻¹ = adj(𝐑) / det(𝐑), cheaper than `inv` or `\`: for symmetric 𝐑 the adjugate's columns are cross products of 𝐑's columns.
