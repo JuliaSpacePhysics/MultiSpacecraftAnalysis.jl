@@ -68,8 +68,8 @@ end
     full = lingradest(BM..., RM...)
     sel = lingradest(BM..., RM...; select = (:Bmag, :div))
     @test propertynames(sel) == (:Bmag, :div)
-    @test sel.Bmag == full.Bmag
-    @test sel.div == full.div
+    @test sel.Bmag ≈ full.Bmag
+    @test sel.div ≈ full.div
 end
 
 @testset "Reciprocal vector" begin

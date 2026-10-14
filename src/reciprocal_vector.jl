@@ -3,13 +3,13 @@ Compute the set of reciprocal vectors {``𝒌_α``}, which is also called the re
 
 See also: [`reciprocal_vector`](@ref)
 """
-@inline function reciprocal_vectors(r_α, r_β, r_γ, r_λ)
-    return (
-        reciprocal_vector(r_α, r_β, r_γ, r_λ),
-        reciprocal_vector(r_β, r_γ, r_λ, r_α),
-        reciprocal_vector(r_γ, r_λ, r_α, r_β),
-        reciprocal_vector(r_λ, r_α, r_β, r_γ),
-    )
+@inline function reciprocal_vectors(r1, r2, r3, r4)
+    # Edges from vertex 4 share one triple product; ∑ 𝒌_α = 0 gives 𝒌_4.
+    a, b, c = r1 - r4, r2 - r4, r3 - r4
+    n1, n2, n3 = cross(b, c), cross(c, a), cross(a, b)
+    V = dot(a, n1)
+    k1, k2, k3 = n1 / V, n2 / V, n3 / V
+    return (k1, k2, k3, -(k1 + k2 + k3))
 end
 
 """

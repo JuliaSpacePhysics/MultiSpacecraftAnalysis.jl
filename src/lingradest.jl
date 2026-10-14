@@ -26,16 +26,13 @@ Based on the method of Chanteur (ISSI, 1998, Ch. 11).
 function lingradest(B1, B2, B3, B4, R1, R2, R3, R4)
     outer(x, y) = x * y'
 
-    Rs = (R1, R2, R3, R4)
     Bs = (B1, B2, B3, B4)
 
-    # Barycenter of the tetrahedron
     Rbary = (R1 .+ R2 .+ R3 .+ R4) ./ 4
-    dRs = map(x -> Rbary - x, Rs)
     ks = reciprocal_vectors(R1, R2, R3, R4)
 
-    # Magnetic field at barycenter
-    Bbc = sum(@. (1 + dot(ks, dRs)) * Bs)
+    # Linear estimate of 𝐁 at the barycenter: weights 1 + 𝒌_α ⋅ (Rbary - 𝐫_α) are all exactly 1/4
+    Bbc = (B1 .+ B2 .+ B3 .+ B4) ./ 4
     Bmag = norm(Bbc)
 
     # Linear estimator
