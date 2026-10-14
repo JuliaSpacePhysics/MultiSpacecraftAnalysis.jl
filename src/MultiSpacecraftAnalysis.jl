@@ -9,7 +9,7 @@ using Statistics: mean
 
 export lingradest
 export ConstantVelocityApproach, CVA
-export reciprocal_vector, reciprocal_vectors
+export reciprocal_vectors
 export position_tensor, volumetric_tensor, tetrahedron_quality
 
 include("reciprocal_vector.jl")
@@ -18,8 +18,6 @@ include("lingradest.jl")
 include("timing.jl")
 
 const CVA = ConstantVelocityApproach
-const CTA = ConstantThicknessApproach
-const DA = DiscontinuityAnalyzer
 
 @setup_workload begin
     Bs = ntuple(_ -> ones(2, 3), 4)

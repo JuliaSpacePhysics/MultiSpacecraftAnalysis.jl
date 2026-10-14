@@ -21,7 +21,6 @@ Pkg.add("MultiSpacecraftAnalysis")
 [paschmannMultispacecraftAnalysisMethods2008; Chapter 4](@citet), [paschmannAnalysisMethodsMultispacecraft2000; Chapter 14](@citet), 
 
 ```@docs
-reciprocal_vector
 reciprocal_vectors
 position_tensor
 volumetric_tensor

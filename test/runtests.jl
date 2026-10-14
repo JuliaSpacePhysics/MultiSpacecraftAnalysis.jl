@@ -2,6 +2,7 @@ using MultiSpacecraftAnalysis
 using Test
 using LinearAlgebra
 using StaticArrays
+using DimensionalData
 using Aqua
 using PythonCall
 
@@ -42,18 +43,18 @@ end
     fields = func.(field_names)
     positions = func.(position_names)
 
-    res = lingradest(fields..., positions...; flatten = true)
+    res = lingradest(fields, positions)
 
-    @test _is_approx(res.Bbc, get_data("Bbc_lingradest")[:, 2:4])
-    @test _is_approx(res.Bmag, get_data("Bt_lingradest"))
+    @test _is_approx(res.vbar, get_data("Bbc_lingradest")[:, 2:4])
+    @test _is_approx(res.vmag, get_data("Bt_lingradest"))
     scale = 1000
-    @test _is_approx(res.LGBx .* scale, get_data("gradBx_lingradest"))
-    @test _is_approx(res.LGBy .* scale, get_data("gradBy_lingradest"))
-    @test _is_approx(res.LGBz .* scale, get_data("gradBz_lingradest"))
+    @test _is_approx(res.grad[:, :, 1] .* scale, get_data("gradBx_lingradest"))
+    @test _is_approx(res.grad[:, :, 2] .* scale, get_data("gradBy_lingradest"))
+    @test _is_approx(res.grad[:, :, 3] .* scale, get_data("gradBz_lingradest"))
     @test _is_approx(res.div .* scale, get_data("divB_nT/1000km_lingradest"))
     @test _is_approx(res.curl .* scale, get_data("curlB_nT/1000km_lingradest")[:, 2:4])
     @test _is_approx(res.curv .* scale, get_data("curvB_lingradest"))
-    @test _is_approx(res.R_c ./ scale, get_data("Rc_1000km_lingradest"))
+    @test _is_approx(res.rc ./ scale, get_data("Rc_1000km_lingradest"))
     @test _is_approx(res.curl .* scale .* 0.8, get_data("jtotal_lingradest"))
 end
 
@@ -66,10 +67,10 @@ end
     for n in (4, 6)
         Rs = ntuple(_ -> 10 * @SVector(randn(3)), n)
         res = lingradest(map(field, Rs), Rs)
-        @test hcat(res.LGBx, res.LGBy, res.LGBz) ≈ G
+        @test res.grad ≈ G
         @test res.div ≈ tr(G)
         @test res.curl ≈ curlG
-        @test res.Bbc ≈ field(res.Rbary)
+        @test res.vbar ≈ field(res.rbar)
     end
 
     N, n = 8, 5
@@ -78,6 +79,17 @@ end
     res = lingradest(Bs, Rs)
     @test all(≈(curlG), res.curl)
     @test all(≈(tr(G)), res.div)
+end
+
+@testset "lingradest DimArray output reuses input dims" begin
+    N = 5
+    comp = Dim{:comp}([:x, :y, :z])
+    Vs = Tuple(DimArray(randn(3, N), (comp, Ti(1:N))) for _ in 1:4)
+    Rs = Tuple(randn(3, N) .+ 10 .* ((1:3) .== i) for i in 1:4)
+    res = lingradest(Vs, Rs)
+    @test dims(res.curl) == (comp, Ti(1:N))
+    @test dims(res.grad) == (Dim{:∂}([:x, :y, :z]), comp, Ti(1:N))
+    @test parent(res.curl) == stack(lingradest(map(parent, Vs), Rs; dim = 2).curl)
 end
 
 @testset "lingradest select kwarg" begin
@@ -89,10 +101,10 @@ end
         randn(N, 3) .+ reshape([0.0, 10, 0], 1, 3),
         randn(N, 3) .+ reshape([0.0, 0, 10], 1, 3),
     )
-    full = lingradest(BM..., RM...)
-    sel = lingradest(BM..., RM...; select = (:Bmag, :div))
-    @test propertynames(sel) == (:Bmag, :div)
-    @test sel.Bmag ≈ full.Bmag
+    full = lingradest(BM, RM)
+    sel = lingradest(BM, RM; select = (:vmag, :div))
+    @test propertynames(sel) == (:vmag, :div)
+    @test sel.vmag ≈ full.vmag
     @test sel.div ≈ full.div
 end
 
@@ -112,6 +124,6 @@ end
     r3 = [64291.1, 17697.7, -2514.05]
     r4 = [64282.6, 17697.4, -2525.76]
     rv = [-0.022940724814179882, -0.04814997115792451, 0.01788566629102226]
-    @test reciprocal_vector(r1, r2, r3, r4) == rv
-    @test reciprocal_vector(r1, [r2, r3, r4]) == reciprocal_vector(r1, (r2, r3, r4)) ≈ rv
+    @test reciprocal_vectors((r1, r2, r3, r4))[1] ≈ rv  # closed form
+    @test reciprocal_vectors([r1, r2, r3, r4])[1] ≈ rv  # generalized
 end

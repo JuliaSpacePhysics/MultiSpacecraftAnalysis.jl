@@ -20,11 +20,11 @@ _pos(o) = randn(N, 3) .+ reshape(o, 1, 3)
 const BM = ntuple(_ -> randn(N, 3), 4)
 const RM = (_pos([0.0, 0, 0]), _pos([10.0, 0, 0]), _pos([0.0, 10, 0]), _pos([0.0, 0, 10]))
 
-SUITE["reciprocal_vector"] = @benchmarkable reciprocal_vector($(R)...)
+SUITE["reciprocal_vectors"] = @benchmarkable reciprocal_vectors($R)
 SUITE["tetrahedron_quality"] = @benchmarkable tetrahedron_quality($(collect(R)))
 SUITE["CVA"] = @benchmarkable CVA($(collect(R)), $([0.0, 1.0, 2.5, 4.0]))
 
-SUITE["lingradest/single"] = @benchmarkable lingradest($(B)..., $(R)...)
-SUITE["lingradest/matrix"] = @benchmarkable lingradest($(BM)..., $(RM)...)
+SUITE["lingradest/single"] = @benchmarkable lingradest($B, $R)
+SUITE["lingradest/matrix"] = @benchmarkable lingradest($BM, $RM)
 SUITE["lingradest/matrix_select"] =
-    @benchmarkable lingradest($(BM)..., $(RM)...; select = (:Bmag, :div))
+    @benchmarkable lingradest($BM, $RM; select = (:vmag, :div))

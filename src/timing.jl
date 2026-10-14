@@ -35,15 +35,3 @@ function ConstantVelocityApproach(positions, times, durations)
     d = V .* durations
     return (; n, V, d)
 end
-
-"""
-Constant Thickness Approach (CTA) for determining boundary normal and velocity.
-Based on the method described in Haaland et al., Annales Geophysicae, 2004.
-"""
-function ConstantThicknessApproach(positions, times, thickness)
-
-end
-
-
-"""Discontinuity Analyzer (DA) for analyzing properties of discontinuities using multi-spacecraft measurements."""
-function DiscontinuityAnalyzer end

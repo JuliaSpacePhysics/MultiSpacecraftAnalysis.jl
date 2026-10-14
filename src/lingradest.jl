@@ -1,52 +1,43 @@
 """
-    lingradest(Bs, Rs)
+    lingradest(Vs, Rs)
 
 Compute spatial derivatives such as grad, div, curl and curvature using the reciprocal vector technique (linear interpolation),
-from field vectors `Bs` measured at positions `Rs` by N ≥ 4 spacecraft.
+from vectors `Vs` of any vector field 𝐕 measured at positions `Rs` by N ≥ 4 spacecraft.
 
 # Returns
 A named tuple containing:
-  • Rbary: Barycenter position
-  • Bbc: Field at the barycenter
-  • Bmag: Field magnitude at the barycenter
-  • LGBx, LGBy, LGBz: Linear gradient estimators for each component
+  • rbar: Barycenter position (mean of `Rs`)
+  • vbar: Field at the barycenter (mean of `Vs`)
+  • vmag: Field magnitude at the barycenter
+  • grad: Linear gradient estimator, `grad[i, j] = ∂_i V_j`
   • div: Linear divergence estimator
   • curl: Linear curl estimator
-  • curv: Field-line curvature vector: 𝐛 · ∇𝐛
-  • R_c: Field-line curvature radius
+  • curv: Field-line curvature vector 𝐛 · ∇𝐛, with 𝐛 = 𝐕 / |𝐕|
+  • rc: Field-line curvature radius
 
 # References
 Based on the method of Chanteur (ISSI, 1998, Ch. 11).
 - [lingradest.pro](https://github.com/spedas/bleeding_edge/blob/master/projects/mms/common/curlometer/lingradest.pro)
 - [lingradest.py](https://github.com/spedas/pyspedas/blob/master/pyspedas/analysis/lingradest.py#L5)
 """
-function lingradest(Bs, Rs)
-    Rbary = sum(Rs) / length(Rs)
+function lingradest(Vs, Rs)
+    rbar = sum(Rs) / length(Rs)
     ks = reciprocal_vectors(Rs)
 
-    # Interpolation weights 1/N + 𝒌_α ⋅ (𝐫 - Rbary) are all 1/N at the barycenter
-    Bbc = sum(Bs) / length(Bs)
-    Bmag = norm(Bbc)
+    # Interpolation weights 1/N + 𝒌_α ⋅ (𝐫 - rbar) are all 1/N at the barycenter
+    vbar = sum(Vs) / length(Vs)
+    vmag = norm(vbar)
 
-    div = sum(map(dot, ks, Bs))
-    curl = sum(map(cross, ks, Bs))
-    ∇𝐛 = sum(map((k, B) -> k * B', ks, Bs))
-    curv = curvature(∇𝐛, Bbc, Bmag)
-    R_c = 1 / norm(curv)
-
-    LGBx = ∇𝐛[:, 1]
-    LGBy = ∇𝐛[:, 2]
-    LGBz = ∇𝐛[:, 3]
-
-    return (;
-        Rbary, Bbc, Bmag,
-        LGBx, LGBy, LGBz,
-        div, curl, curv, R_c,
-    )
+    grad = sum(map((k, V) -> k * V', ks, Vs))
+    div = sum(map(dot, ks, Vs))
+    curl = sum(map(cross, ks, Vs))
+    curv = curvature(grad, vbar, vmag)
+    rc = 1 / norm(curv)
+    return (; rbar, vbar, vmag, grad, div, curl, curv, rc)
 end
 
-@inline function curvature(∇𝐛, Bbc, Bmag = norm(Bbc))
-    return (∇𝐛' * Bbc) / (Bmag^2)
+@inline function curvature(∇𝐕, 𝐕, V = norm(𝐕))
+    return (∇𝐕' * 𝐕) / V^2
 end
 
 # Compose any callable with a NamedTuple projection so
@@ -71,73 +62,26 @@ end
 const MatrixSet = Union{Tuple{Vararg{AbstractMatrix}}, AbstractVector{<:AbstractMatrix}}
 
 """
-    lingradest(Bs, Rs; dim = 1, flatten = false, select = nothing)
+    lingradest(Vs, Rs; dim = 1, select = nothing)
 
-Time-series method: `Bs` and `Rs` are tuples or vectors of matrices, each with time along `dim`. Returns a `StructArray` containing the results.
-
-Set `flatten = true` to flatten the output arrays, making the output shape similar to the input array shape.
+Time-series method: `Vs` and `Rs` are tuples or vectors of matrices, each with time along `dim`. Returns a `StructVector` with one row per time sample.
 
 Pass `select = (:field1, :field2, ...)` to materialize only the listed columns.
 """
-Base.@constprop :aggressive function lingradest(Bs::MatrixSet, Rs::MatrixSet; dim = 1, flatten = false, select = nothing)
-    length(Bs) == length(Rs) || throw(DimensionMismatch("$(length(Bs)) fields but $(length(Rs)) positions"))
-    row = RowKernel{length(Bs), Base.promote_eltype(Bs..., Rs...)}()
+Base.@constprop :aggressive function lingradest(Vs::MatrixSet, Rs::MatrixSet; dim = 1, select = nothing)
+    length(Vs) == length(Rs) || throw(DimensionMismatch("$(length(Vs)) fields but $(length(Rs)) positions"))
+    row = RowKernel{length(Vs), Base.promote_eltype(Vs..., Rs...)}()
     f = isnothing(select) ? row : PickFields{select}(row)
-    s = StructArray(mappedarray(f, map(a -> eachslice(a; dims = dim), (Bs..., Rs...))...))
-    flatten || return s
-    return map(StructArrays.components(s)) do c
-        eltype(c) <: Number && return c
-        a = reinterpret(reshape, eltype(eltype(c)), c)
-        dim == 1 ? transpose(a) : a
-    end
-end
-
-Base.@constprop :aggressive lingradest(B1, B2, B3, B4, R1, R2, R3, R4; kw...) =
-    lingradest((B1, B2, B3, B4), (R1, R2, R3, R4); kw...)
-
-"""
-    lingradest(
-        Bx1, Bx2, Bx3, Bx4,
-        By1, By2, By3, By4,
-        Bz1, Bz2, Bz3, Bz4,
-        R1, R2, R3, R4
-    )
-
-SPEDAS-argument-compatible version of lingradest.
-"""
-function lingradest(
-        Bx1, Bx2, Bx3, Bx4,
-        By1, By2, By3, By4,
-        Bz1, Bz2, Bz3, Bz4,
-        R1, R2, R3, R4
-    )
-    Bs = (hcat(Bx1, By1, Bz1), hcat(Bx2, By2, Bz2), hcat(Bx3, By3, Bz3), hcat(Bx4, By4, Bz4))
-    return lingradest(Bs, (R1, R2, R3, R4))
+    return StructArray(mappedarray(f, map(a -> eachslice(a; dims = dim), (Vs..., Rs...))...))
 end
 
 const lingradest_metadata = Dict(
-    :Bmag => Dict(
-        :name => "B",
-        :desc => "Magnetic field magnitude at the barycenter",
-    ),
-    :Bbc => Dict(
-        :name => "𝐁",
-        :desc => "Magnetic field at the barycenter",
-    ),
-    :div => Dict(
-        :name => "∇ ⋅ 𝐁",
-        :desc => "Linear divergence estimator",
-    ),
-    :curl => Dict(
-        :name => "∇ × 𝐁",
-        :desc => "Linear curl estimator",
-    ),
-    :curv => Dict(
-        :name => "𝐛 · ∇𝐛",
-        :desc => "Field-line curvature vector: 𝐛 · ∇𝐛",
-    ),
-    :R_c => Dict(
-        :name => "R_c",
-        :desc => "Field-line curvature radius",
-    ),
+    :rbar => Dict(:name => "𝐫̄", :desc => "Barycenter position"),
+    :vbar => Dict(:name => "𝐕", :desc => "Field at the barycenter"),
+    :vmag => Dict(:name => "|𝐕|", :desc => "Field magnitude at the barycenter"),
+    :grad => Dict(:name => "∇𝐕", :desc => "Linear gradient estimator: grad[i, j] = ∂_i V_j"),
+    :div => Dict(:name => "∇ ⋅ 𝐕", :desc => "Linear divergence estimator"),
+    :curl => Dict(:name => "∇ × 𝐕", :desc => "Linear curl estimator"),
+    :curv => Dict(:name => "𝐛 · ∇𝐛", :desc => "Field-line curvature vector"),
+    :rc => Dict(:name => "R_c", :desc => "Field-line curvature radius"),
 )
