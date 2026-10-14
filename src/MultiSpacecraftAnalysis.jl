@@ -3,7 +3,6 @@ module MultiSpacecraftAnalysis
 using LinearAlgebra
 using StructArrays
 using MappedArrays: mappedarray
-using ArraysOfArrays: flatview
 using StaticArrays
 using Statistics: mean
 

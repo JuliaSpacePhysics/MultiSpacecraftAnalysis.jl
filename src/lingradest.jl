@@ -35,7 +35,6 @@ function lingradest(B1, B2, B3, B4, R1, R2, R3, R4)
     ks = reciprocal_vectors(R1, R2, R3, R4)
 
     # Magnetic field at barycenter
-    # μs = @. 1 + dot(ks, dRs)
     Bbc = sum(@. (1 + dot(ks, dRs)) * Bs)
     Bmag = norm(Bbc)
 
@@ -65,7 +64,7 @@ end
 @inline function _fast_lingradest(args...)
     T = Base.promote_eltype(args...)
     SV3 = SVector{3, T}
-    return lingradest(SV3.(args)...)
+    return @inline lingradest(SV3.(args)...)
 end
 
 # Compose any callable with a NamedTuple projection so
@@ -88,20 +87,15 @@ Set `flatten = true` to flatten the output arrays, making the output shape simil
 
 Pass `select = (:field1, :field2, ...)` to materialize only the listed columns.
 """
-Base.@constprop :aggressive function lingradest(args::AbstractMatrix...; dim = 1, flatten = false, kw...)
-    s = StructArray(lingradest_lazy(args...; dim, kw...))
-    return flatten ? map(StructArrays.components(s)) do c
-            a = flatview(c)
-            dim == 1 && ndims(a) == 2 ? a' : a
-    end : s
-end
-
-@inline function lingradest_lazy(args...; dim = 1, select = nothing)
-    new_args = map(args) do arg
-        eachslice(arg; dims = dim)
-    end
+Base.@constprop :aggressive function lingradest(args::AbstractMatrix...; dim = 1, flatten = false, select = nothing)
     f = isnothing(select) ? _fast_lingradest : PickFields{select}(_fast_lingradest)
-    return mappedarray(f, new_args...)
+    s = StructArray(mappedarray(f, map(a -> eachslice(a; dims = dim), args)...))
+    flatten || return s
+    return map(StructArrays.components(s)) do c
+        eltype(c) <: Number && return c
+        a = reinterpret(reshape, eltype(eltype(c)), c)
+        dim == 1 ? transpose(a) : a
+    end
 end
 
 """
