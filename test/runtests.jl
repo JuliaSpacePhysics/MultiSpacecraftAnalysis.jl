@@ -10,11 +10,6 @@ using PythonCall
     Aqua.test_all(MultiSpacecraftAnalysis)
 end
 
-@testset "Integration test" begin
-    # Reference: https://beforerr.github.io/beforerr/docs/courses/epss261/homework/ps4.html
-
-end
-
 # skip nan
 _is_approx(x, y; kw...) = isnan(x) && isnan(y) || isapprox(x, y; kw...)
 function _is_approx(x::AbstractArray, y::AbstractArray; kw...)
@@ -28,7 +23,6 @@ end
     # Reference: https://github.com/spedas/pyspedas/blob/master/pyspedas/projects/mms/tests/test_mms_curlometer.py#L4
     # https://github.com/spedas/pyspedas/blob/283bc4ce21a302af3b894451b489a6175dd8fd5d/pyspedas/projects/mms/fgm_tools/mms_lingradest.py#L8
     using PySPEDAS
-    using DimensionalData
 
     @py import pyspedas.projects.mms.tests.test_mms_curlometer: CurlTestCases
     @py import pyspedas.projects.mms.fgm_tools.mms_lingradest: mms_lingradest
@@ -124,6 +118,5 @@ end
     r3 = [64291.1, 17697.7, -2514.05]
     r4 = [64282.6, 17697.4, -2525.76]
     rv = [-0.022940724814179882, -0.04814997115792451, 0.01788566629102226]
-    @test reciprocal_vectors((r1, r2, r3, r4))[1] ≈ rv  # closed form
-    @test reciprocal_vectors([r1, r2, r3, r4])[1] ≈ rv  # generalized
+    @test reciprocal_vectors([r1, r2, r3, r4])[1] ≈ rv
 end

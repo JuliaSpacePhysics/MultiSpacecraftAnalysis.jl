@@ -15,17 +15,14 @@ See also: [`position_tensor`](@ref)
 # References
 - Vogt, Paschmann & Chanteur (2008), Reciprocal vectors, in Multi-spacecraft analysis methods revisited, ISSI SR-008, Ch. 4.
 """
-function reciprocal_vectors(rs)
+@inline function reciprocal_vectors(rs)
     r̄ = sum(rs) / length(rs)
-    𝐑 = position_tensor(rs, r̄)
-    return map(r -> 𝐑 \ (r - r̄), rs)
-end
-
-@inline function reciprocal_vectors((r1, r2, r3, r4)::NTuple{4, Any})
-    # Edges from vertex 4 share one triple product; ∑ 𝒌_α = 0 gives 𝒌_4.
-    a, b, c = r1 - r4, r2 - r4, r3 - r4
-    n1, n2, n3 = cross(b, c), cross(c, a), cross(a, b)
-    V = dot(a, n1)
-    k1, k2, k3 = n1 / V, n2 / V, n3 / V
-    return (k1, k2, k3, -(k1 + k2 + k3))
+    ds = map(r -> r - r̄, rs)
+    X = reduce(hcat, ds)
+    𝐑 = X * X'
+    # 𝐑⁻¹ = adj(𝐑) / det(𝐑), cheaper than `inv` or `\`: for symmetric 𝐑 the adjugate's columns are cross products of 𝐑's columns.
+    a, b, c = 𝐑[:, 1], 𝐑[:, 2], 𝐑[:, 3]
+    A = hcat(cross(b, c), cross(c, a), cross(a, b))
+    s = inv(dot(a, A[:, 1]))
+    return map(d -> s * (A * d), ds)
 end
