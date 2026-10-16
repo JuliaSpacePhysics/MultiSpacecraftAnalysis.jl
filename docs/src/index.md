@@ -31,6 +31,7 @@ tetrahedron_quality
 
 ```@docs
 lingradest
+tlingradest
 ```
 
 > Since $\tilde{g}$ and $\tilde{\boldsymbol{V}}$ are linear functions, the calculation of spatial derivatives, such as the gradient of some scalar function or the divergence or curl of a vector function, can be done quite easily. The results are:

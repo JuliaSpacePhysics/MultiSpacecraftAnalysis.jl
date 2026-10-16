@@ -52,10 +52,10 @@ PickFields{N}(f::F) where {N, F} = PickFields{N, F}(f)
 @inline (p::PickFields{N})(args...) where {N} = NamedTuple{N}(p.f(args...))
 
 # One time sample: `n` field slices then `n` position slices, as SVectors.
-struct RowKernel{n, T} end
+struct RowKernel{n} end
 
-@inline function (::RowKernel{n, T})(slices...) where {n, T}
-    vs = map(SVector{3, T}, slices)
+@inline function (::RowKernel{n})(slices...) where {n}
+    vs = map(SVector{3}, slices)
     return @inline lingradest(ntuple(i -> vs[i], Val(n)), ntuple(i -> vs[n + i], Val(n)))
 end
 
@@ -69,10 +69,49 @@ Time-series method: `Vs` and `Rs` are tuples or vectors of matrices, each with t
 Pass `select = (:field1, :field2, ...)` to materialize only the listed columns.
 """
 Base.@constprop :aggressive function lingradest(Vs::MatrixSet, Rs::MatrixSet; dim = 1, select = nothing)
+    slices = a -> eachslice(a; dims = dim)
+    return _lingradest(map(slices, Vs), map(slices, Rs), select)
+end
+
+# `Vs`, `Rs`: per-spacecraft iterators over the samples
+function _lingradest(Vs, Rs, select)
     length(Vs) == length(Rs) || throw(DimensionMismatch("$(length(Vs)) fields but $(length(Rs)) positions"))
-    row = RowKernel{length(Vs), Base.promote_eltype(Vs..., Rs...)}()
+    row = RowKernel{length(Vs)}()
     f = isnothing(select) ? row : PickFields{select}(row)
-    return StructArray(mappedarray(f, map(a -> eachslice(a; dims = dim), (Vs..., Rs...))...))
+    return StructArray(mappedarray(f, Vs..., Rs...))
+end
+
+"""
+    tlingradest(Vs, Rs; select = nothing, kws...)
+
+[`lingradest`](@ref) on time series, after `tsync(Vs..., Rs...; kws...)` onto the times of `first(Vs)`; see the README.
+"""
+function tlingradest(Vs, Rs; select = nothing, kws...)
+    n = length(Vs)
+    synced = tsync(Vs..., Rs...; kws...)
+    slices = map(x -> eachslice(unwrap(x); dims = resolve_dim(x)), synced)
+    out = _lingradest(slices[1:n], slices[(n + 1):end], select)
+    return _keyed(first(synced), out)
+end
+
+# Each output field as a container like `V1`, laid out like it: time along the same dimension,
+# vector components along its other one, and `grad` adding `:∂` for the derivative direction.
+_keyed(V1, out) = _keyed_fields(V1, out)
+
+function _keyed_fields(V1, out)
+    d = resolve_dim(V1)
+    c = 3 - d
+    return map(StructArrays.components(out)) do col
+        if eltype(col) <: Number
+            rebuild(V1, col, (Val(d),))
+        elseif eltype(col) <: StaticVector
+            rebuild(V1, stack(col; dims = d))
+        else
+            data = d == 1 ? stack(col; dims = 1) : stack(col)
+            comps = (:∂ => axiskeys(V1, c), Val(c))
+            rebuild(V1, data, d == 1 ? (Val(d), comps...) : (comps..., Val(d)))
+        end
+    end
 end
 
 const lingradest_metadata = Dict(
