@@ -6,8 +6,9 @@ using MappedArrays: mappedarray
 using PrecompileTools: @setup_workload, @compile_workload
 using StaticArrays
 using Statistics: mean
+using TimeseriesUtilities: tsync, unwrap, resolve_dim, axiskeys, rebuild
 
-export lingradest
+export lingradest, tlingradest
 export ConstantVelocityApproach, CVA
 export reciprocal_vectors
 export position_tensor, volumetric_tensor, tetrahedron_quality
@@ -22,7 +23,7 @@ const CVA = ConstantVelocityApproach
 @setup_workload begin
     Bs = ntuple(_ -> ones(2, 3), 4)
     Rs = ntuple(i -> repeat(Float64.((1:3)' .== i), 2), 4)
-    @compile_workload lingradest(Bs, Rs)
+    @compile_workload lingradest(Bs, Rs; dim = 1)
 end
 
 end

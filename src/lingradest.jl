@@ -52,27 +52,61 @@ PickFields{N}(f::F) where {N, F} = PickFields{N, F}(f)
 @inline (p::PickFields{N})(args...) where {N} = NamedTuple{N}(p.f(args...))
 
 # One time sample: `n` field slices then `n` position slices, as SVectors.
-struct RowKernel{n, T} end
+struct RowKernel{n} end
 
-@inline function (::RowKernel{n, T})(slices...) where {n, T}
-    vs = map(SVector{3, T}, slices)
+@inline function (::RowKernel{n})(slices...) where {n}
+    vs = map(SVector{3}, slices)
     return @inline lingradest(ntuple(i -> vs[i], Val(n)), ntuple(i -> vs[n + i], Val(n)))
 end
 
 const MatrixSet = Union{Tuple{Vararg{AbstractMatrix}}, AbstractVector{<:AbstractMatrix}}
 
 """
-    lingradest(Vs, Rs; dim = 1, select = nothing)
+    lingradest(Vs, Rs; dim = nothing, select = nothing)
 
-Time-series method: `Vs` and `Rs` are tuples or vectors of matrices, each with time along `dim`. Returns a `StructVector` with one row per time sample.
+`Vs` and `Rs` are tuples or vectors of matrices, each with time along `dim`, which defaults to each input's own time dimension (e.g. `Ti` of a `DimArray`) and is required for plain matrices. Returns a `StructVector` with one row per time sample.
 
 Pass `select = (:field1, :field2, ...)` to materialize only the listed columns.
 """
-Base.@constprop :aggressive function lingradest(Vs::MatrixSet, Rs::MatrixSet; dim = 1, select = nothing)
-    length(Vs) == length(Rs) || throw(DimensionMismatch("$(length(Vs)) fields but $(length(Rs)) positions"))
-    row = RowKernel{length(Vs), Base.promote_eltype(Vs..., Rs...)}()
+Base.@constprop :aggressive function lingradest(Vs::MatrixSet, Rs::MatrixSet; dim = nothing, select = nothing)
+    _check_counts(Vs, Rs)
+    return _lingradest(_samples(Vs, dim), _samples(Rs, dim), select)
+end
+
+_samples(xs, dim) = map(x -> eachslice(unwrap(x); dims = resolve_dim(x, dim)), xs)
+
+_check_counts(Vs, Rs) = length(Vs) == length(Rs) || throw(DimensionMismatch("$(length(Vs)) fields but $(length(Rs)) positions"))
+
+function _lingradest(Vs, Rs, select)
+    row = RowKernel{length(Vs)}()
     f = isnothing(select) ? row : PickFields{select}(row)
-    return StructArray(mappedarray(f, map(a -> eachslice(a; dims = dim), (Vs..., Rs...))...))
+    return StructArray(mappedarray(f, Vs..., Rs...))
+end
+
+"""
+    tlingradest(Vs, Rs; dim = nothing, select = nothing, kws...)
+
+[`lingradest`](@ref) on time series, after `tsync(Vs..., Rs...; dim, kws...)` onto the times of `first(Vs)`.
+"""
+Base.@constprop :aggressive function tlingradest(Vs, Rs; dim = nothing, select = nothing, kws...)
+    _check_counts(Vs, Rs)
+    n = length(Vs)
+    synced = tsync(Vs..., Rs...; dim, kws...)
+    slices = _samples(synced, dim)
+    out = _lingradest(slices[1:n], slices[(n + 1):end], select)
+    return _keyed(first(synced), out, Val(resolve_dim(first(synced), dim)))
+end
+
+# Each output field as a container like `V1` with time along dimension `d`
+_keyed(V1, out, d) = _keyed_fields(V1, out, d)
+_keyed_fields(V1, out, d::Val) = map(col -> _keyed_field(V1, col, d), StructArrays.components(out))
+
+_keyed_field(V1, col::AbstractVector{<:Number}, d::Val) = rebuild(V1, col, (d,))
+_keyed_field(V1, col::AbstractVector{<:StaticVector}, ::Val{d}) where {d} = rebuild(V1, stack(col; dims = d))
+function _keyed_field(V1, col, ::Val{d}) where {d}
+    c = 3 - d
+    comps = (:∂ => axiskeys(V1, c), Val(c))
+    return d == 1 ? rebuild(V1, stack(col; dims = 1), (Val(d), comps...)) : rebuild(V1, stack(col), (comps..., Val(d)))
 end
 
 const lingradest_metadata = Dict(
