@@ -16,6 +16,7 @@ makedocs(;
     ),
     pages = [
         "Home" => "index.md",
+        "MMS example" => "mms.md",
     ],
     plugins = [bib],
 

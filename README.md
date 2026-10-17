@@ -29,7 +29,21 @@ lingradest(Bs, Rs; select = (:div, :curl))  # store only these
 
 - A single sample: `Bs`, `Rs` as collections of 3-vectors; returns one NamedTuple.
 - More than 4 spacecraft use generalized reciprocal vectors (`reciprocal_vectors(Rs)`).
-- With DimensionalData loaded, `DimArray` fields return a `DimStack`, laid out like the inputs.
+
+### Time series with different timestamps
+
+Fields and positions are usually sampled at different times (e.g. MMS burst FGM fields and MEC positions).
+`tlingradest` interpolates all of them onto the times of the first field, clipped to their common range, then runs `lingradest`:
+
+```julia
+out = tlingradest(fields, positions)  # DimArray, KeyedArray or TimeseriesUtilities.Timed inputs
+out.curl                              # same container type and layout as fields[1]
+tlingradest(fields, positions; select = (:div, :curl), extrapolation = true)  # other keywords go to `tsync`
+```
+
+Each output field keeps the time dimension of `fields[1]`, vectors use its component dimension, and `grad` adds `:∂` for the derivative direction.
+`DimArray` outputs are collected in a `DimStack`, others in a `NamedTuple`.
+See the [MMS example](https://JuliaSpacePhysics.github.io/MultiSpacecraftAnalysis.jl/dev/mms/), validated against PySPEDAS.
 
 ## Elsewhere
 

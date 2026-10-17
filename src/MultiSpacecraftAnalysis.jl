@@ -6,8 +6,9 @@ using MappedArrays: mappedarray
 using PrecompileTools: @setup_workload, @compile_workload
 using StaticArrays
 using Statistics: mean
+using TimeseriesUtilities: tsync, unwrap, resolve_dim, axiskeys, rebuild
 
-export lingradest
+export lingradest, tlingradest
 export ConstantVelocityApproach, CVA
 export reciprocal_vectors
 export position_tensor, volumetric_tensor, tetrahedron_quality
