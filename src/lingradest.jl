@@ -12,7 +12,7 @@ A named tuple containing:
   • grad: Linear gradient estimator, `grad[i, j] = ∂_i V_j`
   • div: Linear divergence estimator
   • curl: Linear curl estimator
-  • curv: Field-line curvature vector 𝐛 · ∇𝐛, with 𝐛 = 𝐕 / |𝐕|
+  • curv: Field-line curvature vector 𝐯 · ∇𝐯, with 𝐯 = 𝐕 / |𝐕|
   • rc: Field-line curvature radius
 
 # References
@@ -31,13 +31,15 @@ function lingradest(Vs, Rs)
     grad = sum(map((k, V) -> k * V', ks, Vs))
     div = sum(map(dot, ks, Vs))
     curl = sum(map(cross, ks, Vs))
-    curv = curvature(grad, vbar, vmag)
+    curv = curvature(grad, vbar)
     rc = 1 / norm(curv)
     return (; rbar, vbar, vmag, grad, div, curl, curv, rc)
 end
 
-@inline function curvature(∇𝐕, 𝐕, V = norm(𝐕))
-    return (∇𝐕' * 𝐕) / V^2
+@inline function curvature(∇𝐕, 𝐕)
+    𝐰 = ∇𝐕' * 𝐕
+    V² = 𝐕 ⋅ 𝐕
+    return (𝐰 - 𝐕 * ((𝐕 ⋅ 𝐰) / V²)) / V²
 end
 
 # Compose any callable with a NamedTuple projection so
@@ -110,12 +112,12 @@ function _keyed_field(V1, col, ::Val{d}) where {d}
 end
 
 const lingradest_metadata = Dict(
-    :rbar => Dict(:name => "𝐫̄", :desc => "Barycenter position"),
+    :rbar => Dict(:name => "⟨𝐫⟩", :desc => "Barycenter position"),
     :vbar => Dict(:name => "𝐕", :desc => "Field at the barycenter"),
     :vmag => Dict(:name => "|𝐕|", :desc => "Field magnitude at the barycenter"),
     :grad => Dict(:name => "∇𝐕", :desc => "Linear gradient estimator: grad[i, j] = ∂_i V_j"),
     :div => Dict(:name => "∇ ⋅ 𝐕", :desc => "Linear divergence estimator"),
     :curl => Dict(:name => "∇ × 𝐕", :desc => "Linear curl estimator"),
-    :curv => Dict(:name => "𝐛 · ∇𝐛", :desc => "Field-line curvature vector"),
+    :curv => Dict(:name => "𝐯 · ∇𝐯", :desc => "Field-line curvature vector"),
     :rc => Dict(:name => "R_c", :desc => "Field-line curvature radius"),
 )
