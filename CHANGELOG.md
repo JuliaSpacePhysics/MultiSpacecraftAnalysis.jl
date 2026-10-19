@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.0] - Unreleased
+## [0.2.0] - 2026-10-19
 
 ### Changed
 
@@ -10,11 +10,8 @@
 - **Breaking**: `lingradest(Vs, Rs)` is the only form; the positional 8-argument and SPEDAS 16-argument methods are removed.
 - **Breaking**: `reciprocal_vector` removed; use `reciprocal_vectors(rs)[α]`.
 - **Breaking**: `curv` is the field-line curvature 𝐯 · ∇𝐯 (`rc` its inverse norm). SPEDAS `curvB` keeps an extra component 𝐯 ∂_∥|𝐕| / |𝐕| along the field.
+- DimensionalData output metadata no longer carries units; the estimators keep the units of the inputs.
 
 ### Removed
 
 - `ConstantThicknessApproach` / `CTA` and `DiscontinuityAnalyzer` / `DA` stubs.
-
-### Changed
-
-- DimensionalData output metadata no longer carries units; the estimators keep the units of the inputs.
