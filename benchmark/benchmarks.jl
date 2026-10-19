@@ -25,6 +25,6 @@ SUITE["tetrahedron_quality"] = @benchmarkable tetrahedron_quality($(collect(R)))
 SUITE["CVA"] = @benchmarkable CVA($(collect(R)), $([0.0, 1.0, 2.5, 4.0]))
 
 SUITE["lingradest/single"] = @benchmarkable lingradest($B, $R)
-SUITE["lingradest/matrix"] = @benchmarkable lingradest($BM, $RM)
+SUITE["lingradest/matrix"] = @benchmarkable lingradest($BM, $RM; dim = 1)
 SUITE["lingradest/matrix_select"] =
-    @benchmarkable lingradest($BM, $RM; select = (:vmag, :div))
+    @benchmarkable lingradest($BM, $RM; dim = 1, select = (:vmag, :div))

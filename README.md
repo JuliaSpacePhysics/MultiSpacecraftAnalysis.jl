@@ -11,25 +11,35 @@ Multi-spacecraft analysis methods in Julia.
 using Pkg; Pkg.add("MultiSpacecraftAnalysis")
 using MultiSpacecraftAnalysis
 
-# One N×3 matrix per spacecraft: rows are time samples, columns x, y, z.
-# For 3×N matrices (time along columns), pass `dim = 2`.
-# Units carry through: B in nT, R in km ⇒ gradients in nT/km.
+# One N×3 matrix per spacecraft: rows are time samples, columns x, y, z
 N = 100
 Bs = Tuple(randn(N, 3) for _ in 1:4)                          # field at each spacecraft
 Rs = Tuple(randn(N, 3) .+ 10 .* ((1:3)' .== i) for i in 1:4)  # their positions
 
-res = lingradest(Bs, Rs)  # StructVector, one row per sample
+res = lingradest(Bs, Rs; dim = 1)  # StructVector, one row per sample
 res.curl    # Vector{SVector{3}}; also rbar, vbar, vmag, grad, div, curv, rc
 res.grad    # Vector{SMatrix{3,3}}: grad[i, j] = ∂_i B_j
 res[1]      # NamedTuple of all fields at sample 1
 
 stack(res.curl; dims = 1)                   # N×3 Matrix
-lingradest(Bs, Rs; select = (:div, :curl))  # store only these
+lingradest(Bs, Rs; dim = 1, select = (:div, :curl))  # store only these
 ```
 
 - A single sample: `Bs`, `Rs` as collections of 3-vectors; returns one NamedTuple.
 - More than 4 spacecraft use generalized reciprocal vectors (`reciprocal_vectors(Rs)`).
-- With DimensionalData loaded, `DimArray` fields return a `DimStack`, laid out like the inputs.
+
+### Time series with different timestamps
+
+Fields and positions are usually sampled at different times.
+`tlingradest` interpolates all of them onto the times of the first field, clipped to their common range, then runs `lingradest`:
+
+```julia
+out = tlingradest(fields, positions)  # DimArray, KeyedArray inputs
+out.curl                              # same container type and layout as fields[1]
+```
+
+Each output field keeps the time dimension of `fields[1]`, vectors use its component dimension, and `grad` adds `:∂` for the derivative direction.
+See the [MMS example](https://JuliaSpacePhysics.github.io/MultiSpacecraftAnalysis.jl/dev/mms/), validated against PySPEDAS.
 
 ## Elsewhere
 
