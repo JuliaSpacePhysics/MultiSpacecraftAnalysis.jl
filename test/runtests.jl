@@ -47,8 +47,11 @@ end
     @test _is_approx(res.grad[:, :, 3] .* scale, get_data("gradBz_lingradest"))
     @test _is_approx(res.div .* scale, get_data("divB_nT/1000km_lingradest"))
     @test _is_approx(res.curl .* scale, get_data("curlB_nT/1000km_lingradest")[:, 2:4])
-    @test _is_approx(res.curv .* scale, get_data("curvB_lingradest"))
-    @test _is_approx(res.rc ./ scale, get_data("Rc_1000km_lingradest"))
+    # SPEDAS curvature keeps the component along 𝐕; its perpendicular part is 𝐯 · ∇𝐯
+    curvB = eachrow(get_data("curvB_lingradest")[:, :] ./ scale)
+    curv_perp = map((c, V) -> c - V * (V ⋅ c) / (V ⋅ V), curvB, eachrow(parent(res.vbar)))
+    @test _is_approx(parent(res.curv), stack(curv_perp; dims = 1))
+    @test _is_approx(res.rc, norm.(curv_perp) .^ -1)
     @test _is_approx(res.curl .* scale .* 0.8, get_data("jtotal_lingradest"))
 end
 
@@ -66,6 +69,17 @@ end
         @test res.curl ≈ curlG
         @test res.vbar ≈ field(res.rbar)
     end
+
+    # Straight field lines whose magnitude grows along them
+    Rs = ntuple(_ -> @SVector(randn(3)), 4)
+    res = lingradest(map(r -> SVector(2 + r[1], 0, 0), Rs), Rs)
+    @test norm(res.curv) < 1.0e-12
+
+    # Circular field lines around z: 𝐯 · ∇𝐯 = -𝐫⊥ / |𝐫⊥|²
+    Rs = ntuple(_ -> SVector(5, 0, 0) + @SVector(randn(3)), 4)
+    res = lingradest(map(r -> SVector(-r[2], r[1], 0), Rs), Rs)
+    r⊥ = SVector(res.rbar[1], res.rbar[2], 0)
+    @test res.curv ≈ -r⊥ / (r⊥ ⋅ r⊥)
 
     N, n = 8, 5
     Rs = [10 .* randn(N, 3) for _ in 1:n]
